@@ -131,18 +131,11 @@
             }
           },
           {
-            "name": "debugOutput",
-            "type": "Microsoft.Common.TextBlock",
-            "options": {
-              "text": "[concat('SubID: ', steps('networking').vnetSelector.subscriptionId, ' | RG: ', steps('networking').vnetSelector.resourceGroup, ' | Name: ', steps('networking').vnetSelector.name)]"
-            }
-          },
-          {
             "name": "subnetApi",
             "type": "Microsoft.Solutions.ArmApiControl",
             "request": {
               "method": "GET",
-              "path": "[concat('/subscriptions/', steps('networking').vnetSelector.subscriptionId, '/resourceGroups/', steps('networking').vnetSelector.resourceGroup, '/providers/Microsoft.Network/virtualNetworks/', steps('networking').vnetSelector.name, '/subnets?api-version=2023-05-01')]"
+              "path": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', steps('networking').vnetSelector.resourceGroup, '/providers/Microsoft.Network/virtualNetworks/', steps('networking').vnetSelector.name, '/subnets?api-version=2023-05-01')]"
             }
           },
           {
