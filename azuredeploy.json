@@ -1,0 +1,412 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "vmName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the OPNsense VM. Used as the base for all related resource names."
+      }
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_B2als_v2",
+      "allowedValues": [
+        "Standard_B2als_v2",
+        "Standard_B2as_v2",
+        "Standard_B2ts_v2",
+        "Standard_B4als_v2",
+        "Standard_B4as_v2"
+      ],
+      "metadata": {
+        "description": "Size of the VM."
+      }
+    },
+    "imageResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Full resource ID of the OPNsense image version in the MSP Azure Compute Gallery. Example: /subscriptions/<sub-id>/resourceGroups/<rg>/providers/Microsoft.Compute/galleries/<gallery>/images/<definition>/versions/<version>"
+      }
+    },
+    "rootPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Password to set for the root account on the OPNsense VM."
+      }
+    },
+    "vnetResourceGroup": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource group containing the target VNet."
+      }
+    },
+    "vnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the target VNet."
+      }
+    },
+    "wanSubnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the WAN subnet."
+      }
+    },
+    "lanSubnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the LAN subnet."
+      }
+    },
+    "osDiskSku": {
+      "type": "string",
+      "defaultValue": "StandardSSD_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "StandardSSD_LRS",
+        "Premium_LRS"
+      ],
+      "metadata": {
+        "description": "Storage SKU for the OS disk."
+      }
+    },
+    "remoteSubnets": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "List of on-premises/remote site subnets to route via the OPNsense LAN NIC. Example: [\"192.168.1.0/24\",\"192.168.2.0/24\"]"
+      }
+    },
+    "routeTableSubnetNames": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "List of subnet names within the VNet to associate the route table with. Example: [\"snet-print\",\"snet-avd\",\"snet-infra\"]"
+      }
+    }
+  },
+  "variables": {
+    "wanNicName": "[concat('nic-', parameters('vmName'), '-wan')]",
+    "lanNicName": "[concat('nic-', parameters('vmName'), '-lan')]",
+    "wanNsgName": "[concat('nsg-nic-', parameters('vmName'), '-wan')]",
+    "publicIpName": "[concat('pip-', parameters('vmName'), '-wan')]",
+    "osDiskName": "[concat('disk-', parameters('vmName'), '-os')]",
+    "routeTableName": "[concat('rt-', parameters('vmName'), '-remotesites')]",
+    "wanSubnetRef": "[resourceId(parameters('vnetResourceGroup'), 'Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('wanSubnetName'))]",
+    "lanSubnetRef": "[resourceId(parameters('vnetResourceGroup'), 'Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('lanSubnetName'))]",
+    "createRouteTable": "[greater(length(parameters('remoteSubnets')), 0)]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('publicIpName')]",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Static",
+        "dnsSettings": {
+          "domainNameLabel": "[toLower(concat(parameters('vmName'), '-wan'))]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('wanNsgName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "Allow-IKE",
+            "properties": {
+              "priority": 100,
+              "protocol": "Udp",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "500",
+              "description": "IKE for IPsec VPN negotiation"
+            }
+          },
+          {
+            "name": "Allow-NATT",
+            "properties": {
+              "priority": 110,
+              "protocol": "Udp",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "4500",
+              "description": "NAT-T for IPsec VPN"
+            }
+          },
+          {
+            "name": "Allow-ESP",
+            "properties": {
+              "priority": 120,
+              "protocol": "Esp",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "*",
+              "description": "ESP protocol for IPsec"
+            }
+          },
+          {
+            "name": "Allow-SSH-Inbound",
+            "properties": {
+              "priority": 200,
+              "protocol": "Tcp",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "22",
+              "description": "SSH access - restrict source IP after deployment"
+            }
+          },
+          {
+            "name": "Allow-HTTPS-OPNsense-UI",
+            "properties": {
+              "priority": 210,
+              "protocol": "Tcp",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "443",
+              "description": "OPNsense web UI - restrict source IP after deployment"
+            }
+          },
+          {
+            "name": "Deny-All-Inbound",
+            "properties": {
+              "priority": 4096,
+              "protocol": "*",
+              "access": "Deny",
+              "direction": "Inbound",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "*",
+              "description": "Deny all other inbound traffic"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('wanNicName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('wanNsgName'))]"
+      ],
+      "properties": {
+        "enableIPForwarding": false,
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('wanNsgName'))]"
+        },
+        "ipConfigurations": [
+          {
+            "name": "ipconfig-wan",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))]"
+              },
+              "subnet": {
+                "id": "[variables('wanSubnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('lanNicName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "enableIPForwarding": true,
+        "ipConfigurations": [
+          {
+            "name": "ipconfig-lan",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('lanSubnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2023-07-01",
+      "name": "[parameters('vmName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('wanNicName'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('lanNicName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSize')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "id": "[parameters('imageResourceId')]"
+          },
+          "osDisk": {
+            "name": "[variables('osDiskName')]",
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "[parameters('osDiskSku')]"
+            },
+            "deleteOption": "Delete"
+          }
+        },
+        "osProfile": {
+          "computerName": "[parameters('vmName')]",
+          "adminUsername": "azureuser",
+          "adminPassword": "[parameters('rootPassword')]"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('wanNicName'))]",
+              "properties": {
+                "primary": true,
+                "deleteOption": "Delete"
+              }
+            },
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('lanNicName'))]",
+              "properties": {
+                "primary": false,
+                "deleteOption": "Delete"
+              }
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2023-07-01",
+      "name": "[concat(parameters('vmName'), '/CustomScript-SetRootPassword')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('vmName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.1",
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {
+          "script": "[base64(concat('echo \"root:', parameters('rootPassword'), '\" | chpasswd'))]"
+        }
+      }
+    },
+    {
+      "condition": "[variables('createRouteTable')]",
+      "type": "Microsoft.Network/routeTables",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('routeTableName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('lanNicName'))]"
+      ],
+      "properties": {
+        "copy": [
+          {
+            "name": "routes",
+            "count": "[if(variables('createRouteTable'), length(parameters('remoteSubnets')), 1)]",
+            "input": {
+              "name": "[if(variables('createRouteTable'), replace(parameters('remoteSubnets')[copyIndex('routes')], '/', '-'), 'placeholder')]",
+              "properties": {
+                "addressPrefix": "[if(variables('createRouteTable'), parameters('remoteSubnets')[copyIndex('routes')], '0.0.0.0/32')]",
+                "nextHopType": "VirtualAppliance",
+                "nextHopIpAddress": "[reference(variables('lanNicName')).ipConfigurations[0].properties.privateIPAddress]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "condition": "[and(variables('createRouteTable'), greater(length(parameters('routeTableSubnetNames')), 0))]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[concat('routeTableAssociation-', copyIndex())]",
+      "resourceGroup": "[parameters('vnetResourceGroup')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
+      ],
+      "copy": {
+        "name": "subnetAssociationCopy",
+        "count": "[if(and(variables('createRouteTable'), greater(length(parameters('routeTableSubnetNames')), 0)), length(parameters('routeTableSubnetNames')), 1)]"
+      },
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks/subnets",
+              "apiVersion": "2023-05-01",
+              "name": "[concat(parameters('vnetName'), '/', parameters('routeTableSubnetNames')[copyIndex('subnetAssociationCopy')])]",
+              "properties": {
+                "addressPrefix": "[reference(resourceId(parameters('vnetResourceGroup'), 'Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('routeTableSubnetNames')[copyIndex('subnetAssociationCopy')]), '2023-05-01').addressPrefix]",
+                "routeTable": {
+                  "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "vmName": {
+      "type": "string",
+      "value": "[parameters('vmName')]"
+    },
+    "wanPublicIP": {
+      "type": "string",
+      "value": "[reference(variables('publicIpName')).ipAddress]"
+    },
+    "wanPrivateIP": {
+      "type": "string",
+      "value": "[reference(variables('wanNicName')).ipConfigurations[0].properties.privateIPAddress]"
+    },
+    "lanPrivateIP": {
+      "type": "string",
+      "value": "[reference(variables('lanNicName')).ipConfigurations[0].properties.privateIPAddress]"
+    }
+  }
+}

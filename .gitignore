@@ -1,0 +1,3 @@
+# Ignore any local parameter files that may contain sensitive values
+*.parameters.json
+azuredeploy.parameters.json
