@@ -95,7 +95,7 @@
             },
             "toolTip": {
               "virtualNetwork": "Select the existing VNet for this deployment.",
-              "subnets": "Select the WAN and LAN subnets for the OPNsense NICs."
+              "subnets": "WAN and LAN subnets for the OPNsense NICs. These will be created if they do not already exist."
             },
             "defaultValue": {
               "name": "",
@@ -223,7 +223,9 @@
       "vnetResourceGroup": "[steps('networking').vnetSelector.resourceGroup]",
       "vnetName": "[steps('networking').vnetSelector.name]",
       "wanSubnetName": "[steps('networking').vnetSelector.subnets.wanSubnet.name]",
+      "wanSubnetPrefix": "[steps('networking').vnetSelector.subnets.wanSubnet.addressPrefix]",
       "lanSubnetName": "[steps('networking').vnetSelector.subnets.lanSubnet.name]",
+      "lanSubnetPrefix": "[steps('networking').vnetSelector.subnets.lanSubnet.addressPrefix]",
       "remoteSubnets": "[map(steps('networking').remoteSubnets, (item) => item.subnet)]",
       "routeTableSubnetNames": "[steps('networking').routeTableSubnets]",
       "osDiskSku": "[steps('storage').osDiskSku]"

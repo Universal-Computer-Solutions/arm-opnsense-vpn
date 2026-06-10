@@ -25,7 +25,7 @@
     "imageResourceId": {
       "type": "string",
       "metadata": {
-        "description": "Full resource ID of the OPNsense image version in the MSP Azure Compute Gallery. Example: /subscriptions/<sub-id>/resourceGroups/<rg>/providers/Microsoft.Compute/galleries/<gallery>/images/<definition>/versions/<version>"
+        "description": "Full resource ID of the OPNsense image version in the MSP Azure Compute Gallery."
       }
     },
     "rootPassword": {
@@ -48,14 +48,28 @@
     },
     "wanSubnetName": {
       "type": "string",
+      "defaultValue": "snet-opnsense-wan",
       "metadata": {
-        "description": "Name of the WAN subnet."
+        "description": "Name of the WAN subnet. Will be created if it does not exist."
+      }
+    },
+    "wanSubnetPrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Address prefix for the WAN subnet. Required if the subnet does not already exist."
       }
     },
     "lanSubnetName": {
       "type": "string",
+      "defaultValue": "snet-opnsense-lan",
       "metadata": {
-        "description": "Name of the LAN subnet."
+        "description": "Name of the LAN subnet. Will be created if it does not exist."
+      }
+    },
+    "lanSubnetPrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Address prefix for the LAN subnet. Required if the subnet does not already exist."
       }
     },
     "osDiskSku": {
@@ -74,14 +88,14 @@
       "type": "array",
       "defaultValue": [],
       "metadata": {
-        "description": "List of on-premises/remote site subnets to route via the OPNsense LAN NIC. Example: [\"192.168.1.0/24\",\"192.168.2.0/24\"]"
+        "description": "List of on-premises/remote site subnets to route via the OPNsense LAN NIC."
       }
     },
     "routeTableSubnetNames": {
       "type": "array",
       "defaultValue": [],
       "metadata": {
-        "description": "List of subnet names within the VNet to associate the route table with. Example: [\"snet-print\",\"snet-avd\",\"snet-infra\"]"
+        "description": "List of subnet names within the VNet to associate the route table with."
       }
     }
   },
@@ -97,6 +111,25 @@
     "createRouteTable": "[greater(length(parameters('remoteSubnets')), 0)]"
   },
   "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2023-05-01",
+      "name": "[concat(parameters('vnetName'), '/', parameters('wanSubnetName'))]",
+      "properties": {
+        "addressPrefix": "[parameters('wanSubnetPrefix')]"
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2023-05-01",
+      "name": "[concat(parameters('vnetName'), '/', parameters('lanSubnetName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('wanSubnetName'))]"
+      ],
+      "properties": {
+        "addressPrefix": "[parameters('lanSubnetPrefix')]"
+      }
+    },
     {
       "type": "Microsoft.Network/publicIPAddresses",
       "apiVersion": "2023-05-01",
@@ -213,7 +246,8 @@
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))]",
-        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('wanNsgName'))]"
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('wanNsgName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('wanSubnetName'))]"
       ],
       "properties": {
         "enableIPForwarding": false,
@@ -241,6 +275,9 @@
       "apiVersion": "2023-05-01",
       "name": "[variables('lanNicName')]",
       "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('lanSubnetName'))]"
+      ],
       "properties": {
         "enableIPForwarding": true,
         "ipConfigurations": [
