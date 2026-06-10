@@ -131,6 +131,13 @@
             }
           },
           {
+            "name": "debugOutput",
+            "type": "Microsoft.Common.TextBlock",
+            "options": {
+              "text": "[concat('SubID: ', steps('networking').vnetSelector.subscriptionId, ' | RG: ', steps('networking').vnetSelector.resourceGroup, ' | Name: ', steps('networking').vnetSelector.name)]"
+            }
+          },
+          {
             "name": "subnetApi",
             "type": "Microsoft.Solutions.ArmApiControl",
             "request": {
