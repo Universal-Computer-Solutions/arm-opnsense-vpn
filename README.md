@@ -21,7 +21,7 @@ ARM template for deploying an OPNsense VPN appliance VM in Azure from a generali
 
 Click the button below to launch the deployment wizard in the Azure portal:
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/REPLACE_WITH_RAW_URL_TO_azuredeploy.json/createUIDefinitionUri/REPLACE_WITH_RAW_URL_TO_createUiDefinition.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https://raw.githubusercontent.com/Universal-Computer-Solutions/arm-opnsense-vpn/refs/heads/main/azuredeploy.json/createUIDefinitionUri/https://raw.githubusercontent.com/Universal-Computer-Solutions/arm-opnsense-vpn/refs/heads/main/createUiDefinition.json)
 
 > **Note:** Replace both `REPLACE_WITH_RAW_URL_TO_*` placeholders in the README with the actual raw GitHub URLs to the two files after pushing to your repo. Raw URLs follow the format:
 > `https://raw.githubusercontent.com/<org>/<repo>/main/<filename>`
