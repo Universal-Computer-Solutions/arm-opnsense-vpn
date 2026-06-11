@@ -12,9 +12,8 @@ ARM template for deploying an OPNsense VPN appliance VM in Azure from a generali
 
 ## Prerequisites
 
-- An OPNsense generalised image version in an Azure Compute Gallery
-- The MSP tenant app registration consented in the target tenant (for cross-tenant image access)
-- An existing VNet with at minimum a WAN subnet and LAN subnet
+- An OPNsense specialized image version in an Azure Compute Gallery
+- An existing VNet with at least one active subnet containing a device you can log in to
 - Contributor access to the target resource group
 
 ## Deploy
@@ -41,14 +40,13 @@ Click the button below to launch the deployment wizard in the Azure portal:
 
 ## Post-Deployment Steps
 
-1. **Restrict NSG rules** — update the SSH and HTTPS inbound rules on `nsg-nic-<vmName>-wan` to allow only your MSP management IP rather than `*`
-2. **Set static private IPs** — set both NIC private IPs to static in Azure to prevent reassignment on VM restart
-3. **Configure OPNsense** — log in via SSH or the web UI and configure:
+1. **Set static private IPs** — set both NIC private IPs to static in Azure to prevent reassignment on VM restart
+2. **Configure OPNsense** — log in via Serial Console or the web UI and configure:
    - WAN/LAN interface assignments
    - VPN tunnel(s)
    - Firewall rules
-   - `/usr/local/etc/monit-webhook.env` with customer HaloPSA URL and client ID
-4. **Verify routing** — confirm route table is associated with the correct subnets and test connectivity from a VM on each associated subnet
+   - Firewall Aliases used for HaloPSA alert integration
+3. **Verify routing** — confirm route table is associated with the correct subnets and test connectivity from a VM on each associated subnet
 
 ## Updating the Image
 
