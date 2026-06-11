@@ -20,15 +20,57 @@
         }
       },
       {
-        "name": "imageResourceId",
-        "type": "Microsoft.Common.TextBox",
-        "label": "Image Resource ID",
-        "placeholder": "/subscriptions/<sub-id>/resourceGroups/<rg>/providers/Microsoft.Compute/galleries/<gallery>/images/<definition>/versions/<version>",
-        "toolTip": "Full resource ID of the OPNsense image version in the MSP Azure Compute Gallery.",
+        "name": "galleriesApi",
+        "type": "Microsoft.Solutions.ArmApiControl",
+        "request": {
+          "method": "GET",
+          "path": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Compute/galleries?api-version=2022-03-03')]"
+        }
+      },
+      {
+        "name": "galleryName",
+        "type": "Microsoft.Common.DropDown",
+        "label": "Image Gallery",
+        "toolTip": "Select the Azure Compute Gallery containing the OPNsense image.",
         "constraints": {
           "required": true,
-          "regex": "^/subscriptions/.+/providers/Microsoft.Compute/galleries/.+/images/.+/versions/.+$",
-          "validationMessage": "Must be a valid Azure Compute Gallery image version resource ID."
+          "allowedValues": "[map(basics('galleriesApi').value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '|', last(take(split(item.id, '/'), 5)), '\"}')))]"
+        }
+      },
+      {
+        "name": "imageDefinitionsApi",
+        "type": "Microsoft.Solutions.ArmApiControl",
+        "request": {
+          "method": "GET",
+          "path": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', last(split(basics('galleryName'), '|')), '/providers/Microsoft.Compute/galleries/', first(split(basics('galleryName'), '|')), '/images?api-version=2022-03-03')]"
+        }
+      },
+      {
+        "name": "imageDefinitionName",
+        "type": "Microsoft.Common.DropDown",
+        "label": "Image Definition",
+        "toolTip": "Select the image definition.",
+        "constraints": {
+          "required": true,
+          "allowedValues": "[map(basics('imageDefinitionsApi').value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}')))]"
+        }
+      },
+      {
+        "name": "imageVersionsApi",
+        "type": "Microsoft.Solutions.ArmApiControl",
+        "request": {
+          "method": "GET",
+          "path": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', last(split(basics('galleryName'), '|')), '/providers/Microsoft.Compute/galleries/', first(split(basics('galleryName'), '|')), '/images/', basics('imageDefinitionName'), '/versions?api-version=2022-03-03')]"
+        }
+      },
+      {
+        "name": "imageVersionName",
+        "type": "Microsoft.Common.DropDown",
+        "label": "Image Version",
+        "toolTip": "Select the image version to deploy.",
+        "constraints": {
+          "required": true,
+          "allowedValues": "[map(basics('imageVersionsApi').value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.id, '\"}')))]"
         }
       },
       {
@@ -217,7 +259,7 @@
     ],
     "outputs": {
       "vmName": "[basics('vmName')]",
-      "imageResourceId": "[basics('imageResourceId')]",
+      "imageResourceId": "[basics('imageVersionName')]",
       "vmSize": "[basics('vmSize')]",
       "rootPassword": "[steps('credentials').rootPassword]",
       "vnetResourceGroup": "[steps('networking').vnetSelector.resourceGroup]",
