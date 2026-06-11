@@ -221,20 +221,6 @@
               "destinationPortRange": "443",
               "description": "OPNsense web UI - restrict source IP after deployment"
             }
-          },
-          {
-            "name": "Deny-All-Inbound",
-            "properties": {
-              "priority": 4096,
-              "protocol": "*",
-              "access": "Deny",
-              "direction": "Inbound",
-              "sourceAddressPrefix": "*",
-              "sourcePortRange": "*",
-              "destinationAddressPrefix": "*",
-              "destinationPortRange": "*",
-              "description": "Deny all other inbound traffic"
-            }
           }
         ]
       }
