@@ -31,7 +31,7 @@
     "rootPassword": {
       "type": "securestring",
       "metadata": {
-        "description": "Password to set for the root account on the OPNsense VM."
+        "description": "Password to set for the root account on the OPNsense VM via post-deployment script."
       }
     },
     "vnetResourceGroup": {
@@ -250,7 +250,6 @@
         "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('wanSubnetName'))]"
       ],
       "properties": {
-        "enableAcceleratedNetworking": true,
         "enableIPForwarding": false,
         "networkSecurityGroup": {
           "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('wanNsgName'))]"
@@ -280,7 +279,6 @@
         "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('lanSubnetName'))]"
       ],
       "properties": {
-        "enableAcceleratedNetworking": true,
         "enableIPForwarding": true,
         "ipConfigurations": [
           {
@@ -320,11 +318,6 @@
             },
             "deleteOption": "Delete"
           }
-        },
-        "osProfile": {
-          "computerName": "[parameters('vmName')]",
-          "adminUsername": "azureuser",
-          "adminPassword": "[parameters('rootPassword')]"
         },
         "networkProfile": {
           "networkInterfaces": [
