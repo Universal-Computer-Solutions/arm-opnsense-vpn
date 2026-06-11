@@ -23,9 +23,6 @@ Click the button below to launch the deployment wizard in the Azure portal:
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FUniversal-Computer-Solutions%2Farm-opnsense-vpn%2Fmain%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FUniversal-Computer-Solutions%2Farm-opnsense-vpn%2Fmain%2FcreateUiDefinition.json)
 
-> **Note:** Replace both `REPLACE_WITH_RAW_URL_TO_*` placeholders in the README with the actual raw GitHub URLs to the two files after pushing to your repo. Raw URLs follow the format:
-> `https://raw.githubusercontent.com/<org>/<repo>/main/<filename>`
-
 ## Parameters
 
 | Parameter | Description |
