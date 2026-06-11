@@ -250,6 +250,7 @@
         "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('wanSubnetName'))]"
       ],
       "properties": {
+        "enableAcceleratedNetworking": true,
         "enableIPForwarding": false,
         "networkSecurityGroup": {
           "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('wanNsgName'))]"
@@ -279,6 +280,7 @@
         "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('lanSubnetName'))]"
       ],
       "properties": {
+        "enableAcceleratedNetworking": true,
         "enableIPForwarding": true,
         "ipConfigurations": [
           {
