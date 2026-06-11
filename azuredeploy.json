@@ -345,21 +345,19 @@
       }
     },
     {
-      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "type": "Microsoft.Compute/virtualMachines/runCommands",
       "apiVersion": "2023-07-01",
-      "name": "[concat(parameters('vmName'), '/CustomScript-SetRootPassword')]",
+      "name": "[concat(parameters('vmName'), '/SetRootPassword')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[resourceId('Microsoft.Compute/virtualMachines', parameters('vmName'))]"
       ],
       "properties": {
-        "publisher": "Microsoft.Azure.Extensions",
-        "type": "CustomScript",
-        "typeHandlerVersion": "2.1",
-        "autoUpgradeMinorVersion": true,
-        "protectedSettings": {
-          "script": "[base64(concat('echo \"root:', parameters('rootPassword'), '\" | chpasswd'))]"
-        }
+        "source": {
+          "script": "[concat('echo \"root:', parameters('rootPassword'), '\" | /usr/sbin/chpasswd')]"
+        },
+        "asyncExecution": false,
+        "timeoutInSeconds": 60
       }
     },
     {
