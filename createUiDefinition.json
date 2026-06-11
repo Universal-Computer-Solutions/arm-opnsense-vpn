@@ -82,48 +82,31 @@
         "constraints": {
           "required": true,
           "allowedValues": [
-            { "label": "B2als_v2 (2 vCPU, 4 GB RAM) - Recommended", "value": "Standard_B2als_v2" },
-            { "label": "B2as_v2 (2 vCPU, 8 GB RAM)", "value": "Standard_B2as_v2" },
-            { "label": "B2ts_v2 (2 vCPU, 1 GB RAM) - Minimal", "value": "Standard_B2ts_v2" },
-            { "label": "B4als_v2 (4 vCPU, 8 GB RAM)", "value": "Standard_B4als_v2" },
-            { "label": "B4as_v2 (4 vCPU, 16 GB RAM)", "value": "Standard_B4as_v2" }
+            {
+              "label": "B2als_v2 (2 vCPU, 4 GB RAM) - Recommended",
+              "value": "Standard_B2als_v2"
+            },
+            {
+              "label": "B2as_v2 (2 vCPU, 8 GB RAM)",
+              "value": "Standard_B2as_v2"
+            },
+            {
+              "label": "B2ts_v2 (2 vCPU, 1 GB RAM) - Minimal",
+              "value": "Standard_B2ts_v2"
+            },
+            {
+              "label": "B4als_v2 (4 vCPU, 8 GB RAM)",
+              "value": "Standard_B4als_v2"
+            },
+            {
+              "label": "B4as_v2 (4 vCPU, 16 GB RAM)",
+              "value": "Standard_B4as_v2"
+            }
           ]
         }
       }
     ],
     "steps": [
-      {
-        "name": "credentials",
-        "label": "Credentials",
-        "elements": [
-          {
-            "name": "credentialsInfo",
-            "type": "Microsoft.Common.InfoBox",
-            "visible": true,
-            "options": {
-              "icon": "Info",
-              "text": "This password will be set as the root account password on the OPNsense VM via a post-deployment script."
-            }
-          },
-          {
-            "name": "rootPassword",
-            "type": "Microsoft.Common.PasswordBox",
-            "label": {
-              "password": "Root Password",
-              "confirmPassword": "Confirm Root Password"
-            },
-            "toolTip": "Password to set for the root account on the OPNsense VM.",
-            "constraints": {
-              "required": true,
-              "regex": "^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,}$",
-              "validationMessage": "Minimum 12 characters, must include uppercase, lowercase, number and special character."
-            },
-            "options": {
-              "hideConfirmation": false
-            }
-          }
-        ]
-      },
       {
         "name": "networking",
         "label": "Networking",
@@ -186,7 +169,7 @@
             "visible": true,
             "options": {
               "icon": "Info",
-              "text": "Route Table — Remote Site Routing (Optional): If you have on-premises or remote site subnets that need to be reachable from Azure through the OPNsense VM, enter them below. A route table will be created and associated with the Azure subnets you select, routing that traffic via the OPNsense LAN NIC. Leave both fields empty to skip route table creation."
+              "text": "Route Table \u2014 Remote Site Routing (Optional): If you have on-premises or remote site subnets that need to be reachable from Azure through the OPNsense VM, enter them below. A route table will be created and associated with the Azure subnets you select, routing that traffic via the OPNsense LAN NIC. Leave both fields empty to skip route table creation."
             }
           },
           {
@@ -248,9 +231,18 @@
             "constraints": {
               "required": true,
               "allowedValues": [
-                { "label": "Standard HDD LRS - Lowest cost", "value": "Standard_LRS" },
-                { "label": "Standard SSD LRS - Recommended", "value": "StandardSSD_LRS" },
-                { "label": "Premium SSD LRS", "value": "Premium_LRS" }
+                {
+                  "label": "Standard HDD LRS - Lowest cost",
+                  "value": "Standard_LRS"
+                },
+                {
+                  "label": "Standard SSD LRS - Recommended",
+                  "value": "StandardSSD_LRS"
+                },
+                {
+                  "label": "Premium SSD LRS",
+                  "value": "Premium_LRS"
+                }
               ]
             }
           }
@@ -261,7 +253,6 @@
       "vmName": "[basics('vmName')]",
       "imageResourceId": "[basics('imageVersionName')]",
       "vmSize": "[basics('vmSize')]",
-      "rootPassword": "[steps('credentials').rootPassword]",
       "vnetResourceGroup": "[steps('networking').vnetSelector.resourceGroup]",
       "vnetName": "[steps('networking').vnetSelector.name]",
       "wanSubnetName": "[steps('networking').vnetSelector.subnets.wanSubnet.name]",

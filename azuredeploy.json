@@ -28,12 +28,6 @@
         "description": "Full resource ID of the OPNsense image version in the MSP Azure Compute Gallery."
       }
     },
-    "rootPassword": {
-      "type": "securestring",
-      "metadata": {
-        "description": "Password to set for the root account on the OPNsense VM via post-deployment script."
-      }
-    },
     "vnetResourceGroup": {
       "type": "string",
       "metadata": {
@@ -300,22 +294,6 @@
             "enabled": true
           }
         }
-      }
-    },
-    {
-      "type": "Microsoft.Compute/virtualMachines/runCommands",
-      "apiVersion": "2023-07-01",
-      "name": "[concat(parameters('vmName'), '/SetRootPassword')]",
-      "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Compute/virtualMachines', parameters('vmName'))]"
-      ],
-      "properties": {
-        "source": {
-          "script": "[concat('echo \"root:', parameters('rootPassword'), '\" | /usr/sbin/chpasswd')]"
-        },
-        "asyncExecution": false,
-        "timeoutInSeconds": 60
       }
     },
     {
