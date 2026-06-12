@@ -332,7 +332,9 @@
       ],
       "copy": {
         "name": "subnetAssociationCopy",
-        "count": "[if(and(variables('createRouteTable'), greater(length(parameters('routeTableSubnetNames')), 0)), length(parameters('routeTableSubnetNames')), 1)]"
+        "count": "[if(and(variables('createRouteTable'), greater(length(parameters('routeTableSubnetNames')), 0)), length(parameters('routeTableSubnetNames')), 1)]",
+        "mode": "serial",
+        "batchSize": 1
       },
       "properties": {
         "mode": "Incremental",
