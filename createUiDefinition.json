@@ -156,14 +156,6 @@
             }
           },
           {
-            "name": "subnetApi",
-            "type": "Microsoft.Solutions.ArmApiControl",
-            "request": {
-              "method": "GET",
-              "path": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', steps('networking').vnetSelector.resourceGroup, '/providers/Microsoft.Network/virtualNetworks/', steps('networking').vnetSelector.name, '/subnets?api-version=2023-05-01')]"
-            }
-          },
-          {
             "name": "routeTableInfo",
             "type": "Microsoft.Common.InfoBox",
             "visible": true,
@@ -202,18 +194,6 @@
                   }
                 }
               ]
-            }
-          },
-          {
-            "name": "routeTableSubnets",
-            "type": "Microsoft.Common.DropDown",
-            "label": "Azure Subnets to Apply Route Table To",
-            "toolTip": "Select the subnets within the VNet that should route remote site traffic via OPNsense. Only relevant if remote site subnets are specified above.",
-            "multiLine": true,
-            "multiselect": true,
-            "selectAll": false,
-            "constraints": {
-              "allowedValues": "[map(steps('networking').subnetApi.value, (item) => parse(concat('{\"label\":\"', item.name, '\",\"value\":\"', item.name, '\"}')))]"
             }
           }
         ]
@@ -260,7 +240,6 @@
       "lanSubnetName": "[steps('networking').vnetSelector.subnets.lanSubnet.name]",
       "lanSubnetPrefix": "[steps('networking').vnetSelector.subnets.lanSubnet.addressPrefix]",
       "remoteSubnets": "[map(steps('networking').remoteSubnets, (item) => item.subnet)]",
-      "routeTableSubnetNames": "[steps('networking').routeTableSubnets]",
       "osDiskSku": "[steps('storage').osDiskSku]"
     }
   }

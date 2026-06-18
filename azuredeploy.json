@@ -84,13 +84,6 @@
       "metadata": {
         "description": "List of on-premises/remote site subnets to route via the OPNsense LAN NIC."
       }
-    },
-    "routeTableSubnetNames": {
-      "type": "array",
-      "defaultValue": [],
-      "metadata": {
-        "description": "List of subnet names within the VNet to associate the route table with."
-      }
     }
   },
   "variables": {
@@ -110,8 +103,7 @@
       "apiVersion": "2023-05-01",
       "name": "[concat(parameters('vnetName'), '/', parameters('wanSubnetName'))]",
       "properties": {
-        "addressPrefix": "[parameters('wanSubnetPrefix')]",
-        "defaultOutboundAccess": "false"
+        "addressPrefix": "[parameters('wanSubnetPrefix')]"
       }
     },
     {
@@ -122,8 +114,7 @@
         "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('wanSubnetName'))]"
       ],
       "properties": {
-        "addressPrefix": "[parameters('lanSubnetPrefix')]",
-        "defaultOutboundAccess": "false"
+        "addressPrefix": "[parameters('lanSubnetPrefix')]"
       }
     },
     {
@@ -135,7 +126,10 @@
         "name": "Standard"
       },
       "properties": {
-        "publicIPAllocationMethod": "Static"
+        "publicIPAllocationMethod": "Static",
+        "dnsSettings": {
+          "domainNameLabel": "[toLower(concat(parameters('vmName'), '-wan'))]"
+        }
       }
     },
     {
@@ -215,11 +209,6 @@
               },
               "subnet": {
                 "id": "[variables('wanSubnetRef')]"
-              },
-              "dnsSettings": {
-                "dnsServers": [
-                  "168.63.129.16"
-                ]
               }
             }
           }
@@ -324,42 +313,6 @@
             }
           }
         ]
-      }
-    },
-    {
-      "condition": "[and(variables('createRouteTable'), greater(length(parameters('routeTableSubnetNames')), 0))]",
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
-      "name": "[concat('routeTableAssociation-', copyIndex())]",
-      "resourceGroup": "[parameters('vnetResourceGroup')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
-      ],
-      "copy": {
-        "name": "subnetAssociationCopy",
-        "count": "[if(and(variables('createRouteTable'), greater(length(parameters('routeTableSubnetNames')), 0)), length(parameters('routeTableSubnetNames')), 1)]",
-        "mode": "serial",
-        "batchSize": 1
-      },
-      "properties": {
-        "mode": "Incremental",
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "resources": [
-            {
-              "type": "Microsoft.Network/virtualNetworks/subnets",
-              "apiVersion": "2023-05-01",
-              "name": "[concat(parameters('vnetName'), '/', parameters('routeTableSubnetNames')[copyIndex('subnetAssociationCopy')])]",
-              "properties": {
-                "addressPrefixes": "[reference(resourceId(parameters('vnetResourceGroup'), 'Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('routeTableSubnetNames')[copyIndex('subnetAssociationCopy')]), '2023-05-01').addressPrefixes]",
-                "routeTable": {
-                  "id": "[resourceId('Microsoft.Network/routeTables', variables('routeTableName'))]"
-                }
-              }
-            }
-          ]
-        }
       }
     }
   ],

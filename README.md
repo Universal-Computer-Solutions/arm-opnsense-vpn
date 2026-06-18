@@ -12,8 +12,9 @@ ARM template for deploying an OPNsense VPN appliance VM in Azure from a generali
 
 ## Prerequisites
 
-- An OPNsense specialized image version in an Azure Compute Gallery
-- An existing VNet with at least one active subnet containing a device you can log in to
+- An OPNsense generalised image version in an Azure Compute Gallery
+- The MSP tenant app registration consented in the target tenant (for cross-tenant image access)
+- An existing VNet with at minimum a WAN subnet and LAN subnet
 - Contributor access to the target resource group
 
 ## Deploy
@@ -41,12 +42,20 @@ Click the button below to launch the deployment wizard in the Azure portal:
 ## Post-Deployment Steps
 
 1. **Set static private IPs** — set both NIC private IPs to static in Azure to prevent reassignment on VM restart
-2. **Configure OPNsense** — log in via Serial Console or the web UI and configure:
-   - WAN/LAN interface assignments
-   - VPN tunnel(s)
-   - Firewall rules
-   - Firewall Aliases used for HaloPSA alert integration
-3. **Verify routing** — confirm route table is associated with the correct subnets and test connectivity from a VM on each associated subnet
+2. **Associate route table** — if remote site subnets were specified, go to each Azure subnet that needs to route traffic via OPNsense, open the subnet, and associate the created route table (`rt-<vmName>-remotesites`). Do this manually rather than via ARM to avoid removing existing subnet properties such as NAT gateways
+3. **Run the configure script** — SSH in or use Azure Serial Console and run:
+   ```bash
+   sh /usr/local/bin/opnsense-configure.sh
+   ```
+   This configures the LAN gateway, static routes, firewall aliases, IPsec VPN connections and PSKs
+4. **Note the PSKs** — the script outputs a PSK for each VPN connection at the end; provide these to the administrators of each remote site
+5. **Reboot** — reboot the VM to ensure all settings are cleanly applied from saved config:
+   ```bash
+   reboot
+   ```
+6. **Configure remote site VPN gateways** — use the PSKs from step 4 to configure the VPN on each remote site device
+7. **Update monitoring** — edit `/usr/local/etc/monit-webhook.env` with the customer HaloPSA URL and client ID
+8. **Test connectivity** — verify VPN tunnels come up and test traffic both directions from Azure and from each remote site
 
 ## Updating the Image
 
