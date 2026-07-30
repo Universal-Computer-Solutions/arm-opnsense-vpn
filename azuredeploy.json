@@ -126,10 +126,7 @@
         "name": "Standard"
       },
       "properties": {
-        "publicIPAllocationMethod": "Static",
-        "dnsSettings": {
-          "domainNameLabel": "[toLower(concat(parameters('vmName'), '-wan'))]"
-        }
+        "publicIPAllocationMethod": "Static"
       }
     },
     {
