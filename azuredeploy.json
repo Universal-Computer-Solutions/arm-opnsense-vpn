@@ -209,6 +209,11 @@
               },
               "subnet": {
                 "id": "[variables('wanSubnetRef')]"
+              },
+              "dnsSettings": {
+                "dnsServers": [
+                  "168.63.129.16"
+                ]
               }
             }
           }
